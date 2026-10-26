@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMHEEX - Upload Até 1T</title>
+<meta name="theme-color" content="#0a0a0f">
+<link rel="icon" type="image/jpeg" href="https://storage.amheex.workers.dev/icon.png">
+
+<style>
+/* ===== Design system da documentação AMHEEX Storage ===== */
+:root{
+  --bg:#0a0a0f;--bg2:#0f0f16;--panel:#13131c;--panel2:#191924;--line:#262633;--line2:#33334a;
+  --text:#ececf3;--muted:#a3a3b8;--dim:#6e6e86;
+  --red:#ff2d55;--orange:#ff9f0a;--yellow:#ffd60a;--green:#00e676;--cyan:#00e5ff;--blue:#2979ff;--magenta:#d500f9;
+  --rgb:linear-gradient(90deg,#ff2d55,#ff9f0a,#ffd60a,#00e676,#00e5ff,#2979ff,#d500f9,#ff2d55);
+  --rgb-soft:linear-gradient(135deg,rgba(255,45,85,.16),rgba(0,230,118,.12),rgba(41,121,255,.16),rgba(213,0,249,.14));
+  --mono:ui-monospace,SFMono-Regular,"JetBrains Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@property --ang{syntax:"<angle>";initial-value:0deg;inherits:false}
+@keyframes flow{to{background-position:200% 0}}
+@keyframes spin{to{--ang:360deg}}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden}
+body{font-family:var(--sans);color:var(--text);background:var(--bg);display:flex;justify-content:center;align-items:center;padding:18px;-webkit-font-smoothing:antialiased;scrollbar-color:#33334a transparent}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(600px 400px at 85% -10%,rgba(213,0,249,.12),transparent 60%),radial-gradient(500px 380px at 10% 110%,rgba(0,230,118,.08),transparent 60%),radial-gradient(500px 350px at 50% 45%,rgba(41,121,255,.06),transparent 60%)}
+body::after{content:"";position:fixed;left:0;right:0;top:0;height:2px;background:var(--rgb);background-size:200% 100%;animation:flow 6s linear infinite}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+
+/* Card com borda RGB animada (igual ao banner da documentação) */
+.upload-container{position:relative;width:100%;max-width:650px;max-height:100%;display:flex;flex-direction:column;margin:auto;padding:1.5px;border-radius:20px;background:conic-gradient(from var(--ang),#ff2d55,#ff9f0a,#ffd60a,#00e676,#00e5ff,#2979ff,#d500f9,#ff2d55);animation:spin 10s linear infinite}
+.upload-container::after{content:"";position:absolute;inset:0;border-radius:inherit;background:inherit;filter:blur(22px);opacity:.22;z-index:-1}
+.card-upload{background:var(--panel);border-radius:19px;padding:24px;width:100%;max-height:calc(100vh - 40px);overflow-y:auto}
+
+/* Cabeçalho */
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.brand img{width:42px;height:42px;border-radius:11px;flex:none;object-fit:cover}
+.brand h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+.brand small{display:block;font-size:12.5px;color:var(--muted);font-weight:500;margin-top:2px}
+.brand .pill{margin-left:auto;font:600 11px var(--mono);padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--rgb-soft);color:var(--text);white-space:nowrap}
+.rgb-text{background:var(--rgb);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 8s linear infinite}
+
+.group{margin-bottom:16px}
+.label{display:block;margin-bottom:8px;color:var(--dim);font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+.input{width:100%;background:#08080d;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:11px 13px;outline:none;font:14px var(--mono);transition:border-color .2s,box-shadow .2s}
+.input::placeholder{color:var(--dim)}
+.input:focus{border-color:#7c4dff;box-shadow:0 0 0 3px rgba(124,77,255,.18)}
+
+/* Área de arquivos */
+.fileBox{background:var(--bg2);border:1.5px dashed var(--line2);border-radius:14px;padding:24px 16px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:border-color .25s,background .25s,transform .25s;width:100%}
+.fileBox:hover,.fileBox.drag{border-color:var(--magenta);background:linear-gradient(135deg,rgba(255,45,85,.06),rgba(41,121,255,.06),rgba(213,0,249,.07))}
+.fileBox.drag{transform:scale(1.01)}
+.fileBox:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.fileBox input{display:none}
+.upload-icon{width:42px;height:42px;fill:url(#rgbIcon);filter:drop-shadow(0 0 10px rgba(213,0,249,.35))}
+.fileBtn{font-size:13.5px;font-weight:700;color:var(--text);word-break:break-word;letter-spacing:.2px}
+.fileHint{font-size:12.5px;color:var(--muted)}
+.fileName{font:600 12.5px var(--mono);color:var(--green);display:none;word-break:break-word;margin-top:2px;padding:4px 10px;border-radius:8px;background:rgba(0,230,118,.10)}
+
+/* Chave Extrair .ZIP */
+.zip-toggle{display:flex;align-items:center;gap:12px;margin-top:10px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--bg2);cursor:pointer;user-select:none;transition:border-color .3s,background .3s,box-shadow .3s}
+.zip-toggle:hover{border-color:var(--line2)}
+.zip-toggle input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.switch{position:relative;flex:none;width:40px;height:22px;border-radius:999px;background:#262633;transition:background .35s ease;overflow:hidden}
+.switch::before{content:"";position:absolute;inset:0;background:var(--rgb);background-size:200% 100%;opacity:0;transition:opacity .35s ease;animation:flow 4s linear infinite}
+.knob{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #0006;transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+.zip-text{display:flex;flex-direction:column;gap:2px;min-width:0;text-align:left}
+.zip-text b{font-size:12px;letter-spacing:.6px;color:var(--muted);transition:color .3s}
+.zip-text small{font-size:12.5px;color:var(--dim);line-height:1.3}
+.zip-toggle input:checked ~ .switch::before{opacity:1}
+.zip-toggle input:checked ~ .switch .knob{transform:translateX(18px)}
+.zip-toggle input:checked ~ .zip-text b{color:var(--text)}
+.zip-toggle:has(input:checked){border-color:#3a3a50;background:var(--rgb-soft)}
+.zip-toggle input:focus-visible ~ .switch{outline:2px solid var(--green);outline-offset:2px}
+.zip-toggle.locked{opacity:.55;cursor:not-allowed}
+
+/* Botão principal RGB (igual ao "Compartilhar" da documentação) */
+.btn-upload{width:100%;border:none;border-radius:12px;padding:14px;cursor:pointer;color:#0a0a0f;font:800 14px var(--sans);letter-spacing:1px;background:var(--rgb);background-size:200% 100%;animation:flow 6s linear infinite;text-shadow:0 1px 0 rgba(255,255,255,.25);box-shadow:0 8px 24px rgba(124,77,255,.25);transition:filter .2s,transform .1s}
+.btn-upload:hover{filter:brightness(1.1)}
+.btn-upload:active{transform:translateY(1px)}
+.btn-upload:disabled{opacity:.55;cursor:wait;filter:saturate(.6)}
+
+.progress{width:100%;height:8px;background:var(--panel2);border-radius:999px;overflow:hidden;margin-top:16px;display:none;border:1px solid var(--line)}
+.progressBar{width:0%;height:100%;background:var(--rgb);background-size:200% 100%;animation:flow 2s linear infinite;transition:width .3s ease;box-shadow:0 0 12px rgba(0,229,255,.45)}
+.status{margin-top:10px;color:var(--muted);font:12.5px/1.5 var(--mono);text-align:center;word-break:break-word}
+
+/* Histórico */
+.history-section{position:relative;margin-top:20px;padding-top:16px;width:100%}
+.history-section::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:var(--rgb);opacity:.45}
+.history-title{font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1.2px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+#historyCount{font:600 11px var(--mono)!important;color:var(--muted)!important;letter-spacing:0;padding:2px 8px;border:1px solid var(--line);border-radius:999px}
+.history-list{display:flex;flex-direction:column;gap:8px;max-height:170px;overflow-y:auto;width:100%;padding-right:2px}
+.history-item{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;transition:border-color .2s}
+.history-item:hover{border-color:var(--line2)}
+.item-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.item-name{font:13px var(--mono);color:#e0d4ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+.item-actions{display:flex;gap:5px;flex-shrink:0}
+.action-btn{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 9px;color:var(--text);cursor:pointer;font:600 11.5px var(--sans);transition:background .2s,border-color .2s}
+.action-btn:hover{background:#20202e;border-color:#44445a}
+.empty-history{text-align:center;font-size:12.5px;color:var(--dim);padding:12px 0}
+
+@media (max-width:520px){
+  body{padding:10px}
+  .card-upload{padding:18px;max-height:calc(100vh - 22px)}
+  .brand .pill{display:none}
+  .history-item{flex-wrap:wrap}
+  .item-actions{width:100%;justify-content:flex-end}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="upload-container">
+  <div class="card-upload">
+    <div class="brand">
+      <img src="https://storage.amheex.workers.dev/icon.png" alt="AMHEEX Storage">
+      <div><h2>AMHEEX <span class="rgb-text">Storage</span> Upload</h2><small>Envio direto até 1 TiB · AMHEEX SERVER</small></div>
+      <span class="pill">v2</span>
+    </div>
+    <div class="group"><label class="label" for="path">PASTA OU PATH (OPCIONAL)</label><input type="text" id="path" class="input" placeholder="Ex: meus_arquivos"></div>
+    <div class="group">
+      <div class="fileBox" id="dropZone" role="button" tabindex="0" aria-label="Selecionar arquivos">
+        <svg class="upload-icon" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="rgbIcon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff2d55"/><stop offset=".35" stop-color="#00e676"/><stop offset=".7" stop-color="#2979ff"/><stop offset="1" stop-color="#d500f9"/></linearGradient></defs><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+        <div class="fileBtn">CLIQUE, ARRASTE OU SELECIONE ARQUIVOS / .ZIP</div>
+        <div class="fileHint">Envio direto otimizado para o AMHEEX Storage</div>
+        <input type="file" id="fileInput" multiple>
+        <div class="fileName" id="fileName"></div>
+      </div>
+      <label class="zip-toggle" id="zipToggle" for="extractZip">
+        <input type="checkbox" id="extractZip">
+        <span class="switch" aria-hidden="true"><span class="knob"></span></span>
+        <span class="zip-text"><b>EXTRAIR .ZIP ANTES DE ENVIAR</b><small>Envia os arquivos mantendo as pastas</small></span>
+      </label>
+    </div>
+    <button class="btn-upload" id="uploadBtn">INICIAR UPLOAD</button>
+    <div class="progress" id="progress"><div class="progressBar" id="progressBar"></div></div>
+    <div class="status" id="status" aria-live="polite">Pronto para envio.</div>
+    <div class="history-section">
+      <div class="history-title"><span>HISTÓRICO</span><span id="historyCount" style="color:#666;font-size:10px">0 arquivo(s)</span></div>
+      <div class="history-list" id="historyList"><div class="empty-history" id="emptyHistory">Nenhum envio recente.</div></div>
+    </div>
+  </div>
+</div>
+<script>
+'use strict';
+const API_URL = 'https://storage.amheex.workers.dev';
+const MAX_FILE_SIZE = 1024 ** 4; // 1 TiB
+const CHUNK_SIZE = 25 * 1024 * 1024; // Exatos 25 MB por parte conforme o PHP exige
+const MAX_TENTATIVAS = 5;
+const fileInput = document.getElementById('fileInput');
+const pathInput = document.getElementById('path');
+const statusBox = document.getElementById('status');
+const progressBar = document.getElementById('progressBar');
+const progress = document.getElementById('progress');
+const fileNameDisplay = document.getElementById('fileName');
+const historyList = document.getElementById('historyList');
+const historyCount = document.getElementById('historyCount');
+const uploadBtn = document.getElementById('uploadBtn');
+const dropZone = document.getElementById('dropZone');
+const extractZip = document.getElementById('extractZip');
+const zipToggle = document.getElementById('zipToggle');
+
+let totalArquivos = 0;
+let enviando = false;
+const status = message => { statusBox.textContent = message; };
+const setProgress = (curr, total) => { progressBar.style.width = (total ? Math.min(100, Math.floor(curr / total * 100)) : 0) + '%'; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const safeSegment = s => s.replace(/[^a-zA-Z0-9_.@-]/g, '_').replace(/^\.+$/, '_') || 'arquivo';
+const safePath = s => s.replace(/\\/g, '/').split('/').filter(x => x && x !== '.' && x !== '..').map(safeSegment).join('/');
+const encodePath = path => path.split('/').map(encodeURIComponent).join('/');
+const streamUrlFor = path => `${API_URL}/X/${encodePath(path)}`;
+const downloadUrlFor = path => `${API_URL}/${encodePath(path)}`;
+const isZip = f => /\.zip$/i.test(f.name);
+
+function atualizarSelecao() {
+    const files = [...fileInput.files];
+    const extrair = extractZip.checked;
+    const invalid = files.find(f => f.size === 0 || (f.size > MAX_FILE_SIZE && !(extrair && isZip(f))));
+    if (invalid) {
+        alert(`Arquivo inválido ou muito grande: ${invalid.name}`);
+        fileInput.value = '';
+        fileNameDisplay.style.display = 'none';
+        return;
+    }
+    const zips = files.filter(isZip).length;
+    let txt = `✓ ${files.length} arquivo(s) selecionado(s)`;
+    if (zips && extrair) txt += ` · ${zips} ZIP(s) serão extraídos`;
+    fileNameDisplay.textContent = txt;
+    fileNameDisplay.style.display = files.length ? 'block' : 'none';
+}
+fileInput.addEventListener('change', atualizarSelecao);
+extractZip.addEventListener('change', () => {
+    try { localStorage.setItem('amheex_extract_zip', extractZip.checked ? '1' : '0'); } catch {}
+    if (fileInput.files.length) atualizarSelecao();
+});
+try { extractZip.checked = localStorage.getItem('amheex_extract_zip') === '1'; } catch {}
+
+dropZone.addEventListener('click', () => !enviando && fileInput.click());
+dropZone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!enviando) fileInput.click(); } });
+['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add('drag'); }));
+['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove('drag'); }));
+dropZone.addEventListener('drop', e => {
+    if (enviando || !e.dataTransfer.files.length) return;
+    fileInput.files = e.dataTransfer.files;
+    atualizarSelecao();
+});
+
+function adicionarHistorico(nome, url, downloadUrl, emojiTxt = '📁') {
+    document.getElementById('emptyHistory')?.remove();
+    totalArquivos++;
+    historyCount.textContent = `${totalArquivos} arquivo(s)`;
+    const item = document.createElement('div');
+    item.className = 'history-item';
+
+    const left = document.createElement('div');
+    left.className = 'item-left';
+    const emoji = document.createElement('div');
+    emoji.textContent = emojiTxt;
+    const name = document.createElement('div');
+    name.className = 'item-name';
+    name.title = nome;
+    name.textContent = nome;
+    left.append(emoji, name);
+
+    const actions = document.createElement('div');
+    actions.className = 'item-actions';
+    const btn = (label, fn, title) => { const b = document.createElement('button'); b.className = 'action-btn'; b.textContent = label; b.title = title; b.onclick = fn; return b; };
+
+    const copy = btn('Copiar', async () => {
+        try {
+            await navigator.clipboard.writeText(url);
+            copy.textContent = 'Copiado!';
+            setTimeout(() => copy.textContent = 'Copiar', 1500);
+        } catch { prompt('Copie a URL:', url); }
+    }, 'Copiar link');
+    const open = btn('Abrir', () => window.open(url, '_blank', 'noopener'), 'Abrir link');
+    const down = btn('Baixar', () => window.open(downloadUrl, '_blank', 'noopener'), 'Baixar arquivo');
+
+    actions.append(copy, open, down);
+    item.append(left, actions);
+    historyList.prepend(item);
+}
+
+// Envio inteligente em partes de 25MB compatível com o backend PHP
+async function enviarArquivoInteligente(blobOrFile, pathFinal, label) {
+    const url = streamUrlFor(pathFinal);
+    const totalSize = blobOrFile.size;
+    const totalParts = Math.ceil(totalSize / CHUNK_SIZE);
+
+    status(`Verificando partes existentes de ${label}...`);
+    let startPart = 1;
+    
+    try {
+        const res = await fetch(`${url}?check_size=1&_t=${Date.now()}`, { method: 'GET', cache: 'no-store' });
+        if (res.ok) {
+            const data = await res.json();
+            const currentSize = data.size || 0;
+            if (currentSize >= totalSize) {
+                status(`${label} já está 100% enviado!`);
+                setProgress(totalSize, totalSize);
+                return url;
+            }
+            if (currentSize > 0) {
+                startPart = Math.floor(currentSize / CHUNK_SIZE) + 1;
+                status(`Retomando ${label} a partir da parte ${startPart}/${totalParts}...`);
+                await sleep(1000);
+            }
+        }
+    } catch (e) {
+        console.warn('Erro ao checar tamanho, iniciando da parte 1.');
+    }
+
+    for (let partIndex = startPart; partIndex <= totalParts; partIndex++) {
+        const start = (partIndex - 1) * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, totalSize);
+        const chunk = blobOrFile.slice(start, end);
+
+        let sucessoParte = false;
+        for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+            try {
+                const percent = Math.floor((end / totalSize) * 100);
+                status(`Enviando ${label} - Parte ${partIndex}/${totalParts} (${percent}%) [Tentativa ${tentativa}]...`);
+                setProgress(end, totalSize);
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/octet-stream',
+                        'X-File-Size': String(totalSize),
+                        'X-Part-Index': String(partIndex)
+                    },
+                    body: chunk
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const resText = await response.text();
+                if (partIndex === totalParts || resText.startsWith('http')) {
+                    return resText.trim() || url;
+                }
+
+                sucessoParte = true;
+                break;
+            } catch (err) {
+                if (tentativa >= MAX_TENTATIVAS) throw new Error(`Falha na parte ${partIndex}: ${err.message}`);
+                const espera = 2000 * tentativa;
+                status(`Erro na parte ${partIndex}. Tentando novamente em ${espera/1000}s...`);
+                await sleep(espera);
+            }
+        }
+        if (!sucessoParte) throw new Error(`Falha persistente ao enviar a parte ${partIndex}`);
+    }
+    return url;
+}
+
+async function enviarComRetomada(blobOrFile, pathFinal, label) {
+    for (let tentativa = 1; ; tentativa++) {
+        try {
+            return await enviarArquivoInteligente(blobOrFile, pathFinal, label);
+        } catch (err) {
+            if (tentativa >= MAX_TENTATIVAS) throw err;
+            const espera = 3000 * tentativa;
+            status(`${err.message} em ${label}. Retomando em ${espera/1000}s (${tentativa}/${MAX_TENTATIVAS})...`);
+            await sleep(espera);
+        }
+    }
+}
+
+const u64 = (dv, o) => dv.getUint32(o, true) + dv.getUint32(o + 4, true) * 2 ** 32;
+async function lerBytes(file, inicio, tamanho) {
+    return new DataView(await file.slice(inicio, inicio + tamanho).arrayBuffer());
+}
+
+async function listarZip(file) {
+    const tailLen = Math.min(file.size, 22 + 65535 + 20);
+    const tail = await lerBytes(file, file.size - tailLen, tailLen);
+    let eocd = -1;
+    for (let i = tailLen - 22; i >= 0; i--) if (tail.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    if (eocd < 0) throw new Error('ZIP inválido');
+    let total = tail.getUint16(eocd + 10, true);
+    let cdSize = tail.getUint32(eocd + 12, true);
+    let cdOffset = tail.getUint32(eocd + 16, true);
+    const cd = await lerBytes(file, cdOffset, cdSize);
+    const dec = new TextDecoder();
+    const entradas = [];
+    let p = 0;
+    for (let n = 0; n < total; n++) {
+        if (cd.getUint32(p, true) !== 0x02014b50) throw new Error('ZIP corrompido');
+        const flags = cd.getUint16(p + 8, true), metodo = cd.getUint16(p + 10, true);
+        let csize = cd.getUint32(p + 20, true), usize = cd.getUint32(p + 24, true);
+        const nl = cd.getUint16(p + 28, true), xl = cd.getUint16(p + 30, true), cl = cd.getUint16(p + 32, true);
+        let offset = cd.getUint32(p + 42, true);
+        const nome = dec.decode(new Uint8Array(cd.buffer, cd.byteOffset + p + 46, nl));
+        entradas.push({ nome, flags, metodo, csize, usize, offset });
+        p = p + 46 + nl + xl + cl;
+    }
+    return entradas;
+}
+
+async function extrairEntrada(file, e, label) {
+    const lh = await lerBytes(file, e.offset, 30);
+    const inicio = e.offset + 30 + lh.getUint16(26, true) + lh.getUint16(28, true);
+    const bruto = file.slice(inicio, inicio + e.csize);
+    if (e.metodo === 0) return bruto;
+    const blob = await new Response(bruto.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob();
+    return blob;
+}
+
+async function iniciarUpload() {
+    const selected = [...fileInput.files];
+    if (!selected.length) { alert('Selecione um arquivo!'); return; }
+
+    enviando = true;
+    uploadBtn.disabled = true;
+    extractZip.disabled = true; zipToggle.classList.add('locked');
+    progress.style.display = 'block';
+    let successes = 0, failures = 0;
+
+    try {
+        const base = safePath(pathInput.value.trim());
+        const fila = [];
+        for (const file of selected) {
+            if (extractZip.checked && isZip(file)) {
+                try {
+                    const pasta = safeSegment(file.name.replace(/\.zip$/i, ''));
+                    const entradas = await listarZip(file);
+                    for (const e of entradas) {
+                        if (e.nome.endsWith('/') || e.nome.endsWith('\\')) continue;
+                        const interno = safePath(e.nome);
+                        if (!interno) continue;
+                        fila.push({ tipo: 'zip', zip: file, entrada: e, label: `${interno}`, pathFinal: [base, pasta, interno].filter(Boolean).join('/') });
+                    }
+                } catch (err) {
+                    failures++;
+                }
+            } else {
+                const name = safeSegment(file.name);
+                fila.push({ tipo: 'arquivo', file, label: name, pathFinal: [base, name].filter(Boolean).join('/') });
+            }
+        }
+
+        for (let i = 0; i < fila.length; i++) {
+            const item = fila[i];
+            try {
+                let blobOrFile = item.tipo === 'zip' ? await extrairEntrada(item.zip, item.entrada, item.label) : item.file;
+                const url = await enviarComRetomada(blobOrFile, item.pathFinal, `${item.label} [${i + 1}/${fila.length}]`);
+                adicionarHistorico(item.label, url, downloadUrlFor(item.pathFinal), item.tipo === 'zip' ? '🗜️' : '📁');
+                successes++;
+            } catch (error) {
+                failures++;
+            }
+        }
+        status(`Concluído: ${successes} enviado(s), ${failures} falha(s).`);
+        if (!failures) { fileInput.value = ''; fileNameDisplay.style.display = 'none'; }
+    } catch (error) {
+        status(`Erro geral: ${error.message}`);
+    } finally {
+        enviando = false;
+        uploadBtn.disabled = false;
+        extractZip.disabled = false; zipToggle.classList.remove('locked');
+        setTimeout(() => { progress.style.display = 'none'; setProgress(0, 1); }, 2500);
+    }
+}
+
+uploadBtn.addEventListener('click', iniciarUpload);
+</script>
+</body>
+</html>
